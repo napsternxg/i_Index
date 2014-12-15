@@ -1,0 +1,9 @@
+snap-1.1-2.3-centos6.5-x64-py2.6
+*.csv
+*.txt
+*.tsv
+*.err
+*.out
+*.dat
+*.pyc
+*.pyo
