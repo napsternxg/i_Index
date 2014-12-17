@@ -70,58 +70,17 @@ def norm_weight(r):
 
 # Find weights for all edges and save to file
 df_pp_weights = df_pp.apply(norm_weight, axis=1)
-df_pp_weights[["Source","Target","source_year","target_year"]] = df_pp_weights[["Source","Target","source_year","target_year"]].astype(int)
 df_pp_weights.to_csv("SOURCE_TARGET_SY_TY_ALL_WEIGHTS.tsv",sep="\t",index=False)
 df_pp_weights[["Source","Target","norm_weight"]].to_csv("T_S_W.tsv",sep="\t",header=None,cols=["Target","Source","norm_weight"],index=False)
 
 
 # Sort the array based on norm_weight
-#df_w_sorted = df_pp_weights.sort(columns="norm_weight", ascending=False)
+df_w_sorted = df_pp_weights.sort(columns="norm_weight", ascending=False)
 
 
 # Group by based on various aggregation methods and save to file
 df_source_grp = df_pp_weights.groupby("Source").agg({"Target": "count", "source_year": "first", "target_year": {"min": np.min, "max": np.max}, "weight": np.sum, "norm_weight": np.sum})
-df_source_grp.columns = ["_".join(i) for i in df_source_grp.columns]
-df_source_grp.index.name = "PMID"
-# Add some more scores to the source aggregator
-
-df_source_grp["cite_age"] = abs(df_source_grp["target_year_max"] - df_source_grp["source_year_first"])
-df_source_grp["cite_span"] = abs(df_source_grp["target_year_max"] - df_source_grp["target_year_min"])
-df_source_grp["avg_cite"] = df_source_grp["Target_count"]/(df_source_grp["cite_age"]+1)
-df_source_grp["avg_cite_for_span"] = df_source_grp["Target_count"]/(df_source_grp["cite_span"]+1)
-
-#df_source_grp.to_csv("SOURCE_AGG_OLD.tsv", sep="\t",index_label=["PMID"])
-
-# Read the scores in given format
-#df_source_grp = pd.read_csv("SOURCE_AGG_OLD.tsv",sep="\t")
-#df_source_grp.rename(columns={'Source':'PMID'}, inplace=True)
-#df_source_grp[["PMID"]] = df_source_grp[["PMID"]].astype(int)
-#df_source_grp = df_source_grp.set_index("PMID")
+df_source_grp.to_csv("SOURCE_AGG.tsv", sep="\t",index_label=["Source"], header= ["_".join(k) for k in df_source_grp.columns])
 
 
-# Start computation of temporal citation score
-df_tcs = df_pp_weights
-#df_tcs = df_pp.groupby(["Source","target_year"]).agg({"source_year":"first","weight":"count"})
-# Total number of citation in each year
-df_tcs_tot = pd.DataFrame(df_tcs.groupby("target_year").count()["weight"])
-df_tcs_tot.columns = ["total_cites"]
-df_tcs_tot["log_cites"] = np.log10(df_tcs_tot["total_cites"])
-
-def w_cites(r):
-    tot = df_tcs_tot.ix[r["target_year"],"log_cites"]
-    diff_y = abs(r["target_year"] - r["source_year"]) + 1.0
-    return r["weight"]*diff_y/tot
-
-# Generate the temporal citatation score
-df_tcs["w_cites"] = df_tcs.apply(w_cites,axis=1)
-df_tcs.rename(columns={"Source":"PMID"}, inplace=True)
-df_tcs["PMID"] = df_tcs["PMID"].astype(int)
-#df_tcs.to_csv("SOURCE_AGG_WC.tsv",sep="\t",index_label=["PMID"])
-
-# Aggregate score for each PMID
-df_tcs_agg = df_tcs.groupby("PMID").agg({"w_cites":"sum"})
-#df_tcs_agg.index.name = "PMID"
-# Add these score to the PMID aggregation table.
-df_source_grp[["w_cites"]] = df_tcs_agg[["w_cites"]]
-df_source_grp.to_csv("SOURCE_AGG.tsv",sep="\t",index_label=["PMID"])
 # Done

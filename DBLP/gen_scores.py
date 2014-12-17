@@ -5,7 +5,7 @@ import numpy as np
 Import the PMID_2000.tsv file containing the columns from Articles table in Format:
   PMID  year  citedby
 """
-df = pd.read_csv("PMID_1970_2008.tsv", sep="\t",index_col="PMID")
+df = pd.read_csv("DBLP.tsv", sep="\t",index_col="PMID")
 # Replace all null vals of citedby column with empty string.
 df["citedby"] = df["citedby"].fillna("")
 
